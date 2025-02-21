@@ -1,81 +1,100 @@
-const { v4: uuidv4 } = require('uuid');
+const HttpError = require('../models/http-error');
+const { v4: uuid } = require('uuid');
+const { validationResult, Result } = require('express-validator');
+const User = require('../models/user');
 
-let USERS = [{
-    id: 'u1',
-    name: 'Max',
-    email: 'max@zimttech.org',
-    password: "1234"
-}];
-
-const getUsers = (req, res, next) => {
-    res.status(200).json({ users: USERS });
-};
-
-const getUserById = (req, res, next) => {
-    const userId = req.params.uid;
-    const user = USERS.find(u => u.id === userId); // Use '===' for comparison
-    res.status(200).json({ user });
-};
-
-const createUser = (req, res, next) => { 
-    const { name, email } = req.body;
-    const createdUser = {
-        id: uuidv4(), 
-        name,
-        email
-    };
-    USERS.push(createdUser);
-    res.status(201).json({ user: createdUser });
-};
-
-const patchUser = (req, res, next)=>{
-    const userId = req.params.id;
-    const {name, email} = req.body;
-    const user = {...USERS.find(u=>u.id === userId)};
-    const index = USERS.findIndex(u=>u.id === userId);
-    user.name = name;
-    user.email = email;
-    USERS[index]= user;
-    res.status(200).json({user});
+const createUser = async (req, res, next) => {
+    // Validate input data
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return next(new HttpError("Invalid input data", 422));
+    }
     
-}
-const deleteUser = (req, res, next)=>{
-    const userId = req.params.id;
-    USERS = USERS.filter(u=>u.id !== userId);
-    res.status(200).json({message: 'User deleted'});
-}
-
-const login = (req, res, next) => {
-    const {email, password}  = req.body;
-    const user = USERS.find(u=>u.email=== email);
-    if(!user){
-        return res.status(400).json({message:'User not found'});
-
+    const { name, email, password } = req.body;
+    
+    // Check if user already exists
+    try {
+      const existingUser = await User.findOne({ email: email });
+      
+      if (existingUser) {
+        const error = new HttpError("User exists already", 422);
+        return next(error);
+      }
+      
+      // Hash password before storing
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
+      // Create new user
+      const newUser = new User({
+        name,
+        email,
+        password_hash: hashedPassword,
+        created_at: new Date(),
+        places: []
+      });
+      
+      // Save user
+      const result = await newUser.save();
+      
+      res.status(201).json({
+        message: "User created successfully",
+        user: result.toObject({ getters: true })
+      });
+      
+    } catch (err) {
+      const error = new HttpError("Signing up failed, please try again later", 500);
+      return next(error);
     }
-    if(user.email === email && user.password === password){
-       return res.status(200).json({message: 'Login successful'});
-};
+  };
 
-if(user.email == email && user.password !== password){
-    return res.status(401).json({message: 'Invalid password'});
-}
-}
-const signup = (req, res, next) => {
-    const {email, name,  password} = req.body;
-    const user = USERS.find(u=>u.email=== email);
-    if(user){
-        res.status(400).json({message:'User already exists'});
-
+const login = async (req, res, next) => {
+    const { email, password } = req.body;
+  
+    let existingUser;
+    try {
+      existingUser = await User.findOne({ email: email });
+      
+      if (!existingUser) {
+        const error = new HttpError("Invalid credentials, could not log you in", 401);
+        return next(error);
+      }
+  
+      // NEVER compare passwords directly - should use bcrypt.compare
+      const isValidPassword = await bcrypt.compare(password, existingUser.password_hash);
+      
+      if (!isValidPassword) {
+        const error = new HttpError("Invalid credentials, could not log you in", 401);
+        return next(error);
+      }
+  
+      // Update last login timestamp
+      existingUser.last_login = new Date();
+      await existingUser.save();
+  
+      res.json({
+        message: 'Logged in',
+        userId: existingUser.id
+      });
+      
+    } catch (err) {
+      const error = new HttpError("Logging in failed, please try again later", 500);
+      return next(error);
     }
-    const createdUser = {
-        id: uuidv4(), 
-        name: name,
-        email: email,
-        password: password
-    };
-    USERS.push(createdUser);
-    res.status(201).json({ user: createdUser });}
+  };
 
+const getUsers = async (req, res, next) => {
+    try {
+      const users = await User.find({}, '-password_hash');
+      res.json({ 
+        users: users.map(user => user.toObject({ getters: true }))
+      });
+    } catch (err) {
+      const error = new HttpError('Fetching users failed, please try again later.', 500);
+      return next(error);
+    }
+  };
 
-
-module.exports = { getUsers, getUserById, createUser, patchUser, deleteUser, login, signup };
+module.exports ={
+    createUser, 
+    login
+}
