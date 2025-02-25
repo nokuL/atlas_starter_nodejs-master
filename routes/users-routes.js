@@ -9,22 +9,22 @@ const router = express.Router();
 
 router.get('/', getUsers);
 
-router.get('/:uid', getUserById);
+//router.get('/:uid', getUserById);
 
-router.post('/', [check('name').not().isEmpty(),
+/* router.post('/', [check('name').not().isEmpty(),
     check('email').normalizeEmail().isEmail(), check('password').isLength({min: 6})
-],  createUser);
+],  createUser); */
 
-router.patch('/:uid', [check('name').not().isEmpty(), 
+/* router.patch('/:uid', [check('name').not().isEmpty(), 
 check('email').normalizeEmail().isEmail(), check('password').isLength({min: 6})
-],patchUser);
+],patchUser); */
 
-router.delete('/:uid', deleteUser)
+//router.delete('/:uid', deleteUser)
 
 router.post('/login', login);
 
 router.post('/signup', [check('name').not().isEmpty(), 
     check('email').normalizeEmail().isEmail(), check('password').isLength({min: 6})
-    ], signup);
+    ], createUser);
 
 module.exports = router;

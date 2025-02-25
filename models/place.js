@@ -1,6 +1,8 @@
     const moongoose = require('mongoose');
+    const schema = moongoose.Schema;
+
  // Place Schema
-const placeSchema = new Schema({
+const placeSchema = new schema({
     name: {
       type: String,
       required: true
@@ -28,7 +30,7 @@ const placeSchema = new Schema({
       required: true
     },
     categories: [{
-      type: Schema.Types.ObjectId,
+      type: schema.Types.ObjectId,
       ref: 'Category'
     }],
     created_at: {
@@ -43,5 +45,5 @@ const placeSchema = new Schema({
   
   // Create geospatial index on location field
   placeSchema.index({ location: '2dsphere' });
-    module.exports = moongoose.model('Place', Schema);
+    module.exports = moongoose.model('Place', placeSchema);
      

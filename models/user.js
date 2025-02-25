@@ -1,8 +1,10 @@
 const { errorMonitor } = require('mongodb/lib/apm');
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
 const unique = require('mongoose-unique-validator');
 const userSchema = new Schema({
-    username: {
+    name: {
       type: String,
       required: true,
       unique: true,

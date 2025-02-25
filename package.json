@@ -18,8 +18,10 @@
   },
   "homepage": "https://github.com/mongodb-university/atlas_starter_nodejs#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "express-validator": "^7.2.1",
     "mongodb": "^3.5.9",
-    "mongoose": "^8.3.4"
+    "mongoose": "^7.8.6",
+    "mongoose-unique-validator": "^4.0.1"
   }
 }
