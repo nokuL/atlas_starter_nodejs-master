@@ -1,6 +1,5 @@
-
-
-  const express = require('express');
+require('dotenv').config();
+const express = require('express');
 const bodyParser = require('body-parser');
 const { MongoClient } = require("mongodb");
 const mongoose = require('mongoose');
@@ -9,9 +8,13 @@ const mongoose = require('mongoose');
 const placesRoutes = require('./routes/places-routes');
 const HttpError = require('./models/http-error');
 const usersRoutes = require('./routes/users-routes');
+const authRoutes = require('./routes/auth-route');
 const app = express();
 
 app.use(bodyParser.json());
+
+
+
 
 app.use((req, res, next)=>{
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,7 +24,10 @@ app.use((req, res, next)=>{
 })
 app.use('/api/places/',placesRoutes);
 
+
 app.use('/api/users/', usersRoutes);
+
+//app.use('/auth', authRoutes);
 
 app.use((req, res, next)=>{
     const error = new HttpError('Could not find this route', 404);
@@ -42,8 +48,8 @@ const uri =
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 15000 // Increase timeout
 })
-.then(()=>app.listen(5003, () => {
-  console.log('Server is running on port 5001');
+.then(()=>app.listen(5000, () => {
+  console.log('Server is running on port 5000');
 }))
 .catch(err => console.log(err)); 
 // mongoose.connect(uri)

@@ -7,6 +7,8 @@ const {getUsers, getUserById, createUser, patchUser, deleteUser, login, signup} 
 const router = express.Router();
 
 
+
+
 router.get('/', getUsers);
 
 //router.get('/:uid', getUserById);

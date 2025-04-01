@@ -2,9 +2,12 @@ const HttpError = require('../models/http-error');
 const { v4: uuid } = require('uuid');
 const { validationResult, Result } = require('express-validator');
 const User = require('../models/user');
-//const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const SECRET = process.env.JWT_SECRET;
 
 const createUser = async (req, res, next) => {
+  console.log("##################### create user here");
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -17,26 +20,30 @@ const createUser = async (req, res, next) => {
       const existingUser = await User.findOne({ email: email });
       
       if (existingUser) {
-        const error = new HttpError("User exists already", 422);
+        const error = new HttpError("User exists already, please login instead", 422);
         return next(error);
       }
       
-    //  const hashedPassword = await bcrypt.hash(password, 12);
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 12);
       
       // Create new user
       const newUser = new User({
         name,
         email,
-        password_hash: password,
+        password_hash: hashedPassword,
         created_at: new Date(),
         places: []
       });
       
       const result = await newUser.save();
+      let token;
+       token = jwt.sign({userId: newUser.id, email: newUser.email}, SECRET, {expiresIn: '1h'})
       
       res.status(201).json({
         message: "User created successfully",
-        user: result.toObject({ getters: true })
+        user: {userId: newUser.id, email: email},
+        token: token
       });
       
     } catch (err) {
@@ -57,21 +64,24 @@ const login = async (req, res, next) => {
         return next(error);
       }
   
-      // NEVER compare passwords directly - should use bcrypt.compare
-      const isValidPassword =  true;/* await bcrypt.compare(password, existingUser.password_hash) */;// temporarily commented for comparison
+      const isValidPassword =   await bcrypt.compare(password, existingUser.password_hash);// temporarily commented for comparison
       
       if (!isValidPassword) {
         const error = new HttpError("Invalid credentials, could not log you in", 401);
         return next(error);
       }
+
+      let token ;
+      token = jwt.sign({userId: existingUser.id, email: existingUser.email},SECRET, {expiresIn: '1h'})
+
   
-      // Update last login timestamp
       existingUser.last_login = new Date();
       await existingUser.save();
   
       res.json({
         message: 'Logged in',
-        userId: existingUser.id
+        user: {userId: existingUser.id, email: existingUser.email},
+        token: token
       });
       
     } catch (err) {

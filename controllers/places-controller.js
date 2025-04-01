@@ -53,7 +53,7 @@ const createPlace = async (req, res, next) => {
 const getPlaces = async (req, res, next) => { 
   let places;
   try{
-    const places = await Place.find();
+     places = await Place.find();
 
   }catch(err){
     const error = new HttpError("Could not find any places");
