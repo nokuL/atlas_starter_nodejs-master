@@ -14,7 +14,7 @@ const createUser = async (req, res, next) => {
       return next(new HttpError("Invalid input data", 422));
     }
     
-    const { name, email, password } = req.body;
+    const { name, email, password, userName } = req.body;
     
     try {
       const existingUser = await User.findOne({ email: email });
@@ -30,10 +30,11 @@ const createUser = async (req, res, next) => {
       // Create new user
       const newUser = new User({
         name,
-        email,
+        userName,
+        email,        
         password_hash: hashedPassword,
         created_at: new Date(),
-        places: []
+        places: [],
       });
       
       const result = await newUser.save();
@@ -47,6 +48,7 @@ const createUser = async (req, res, next) => {
       });
       
     } catch (err) {
+      console.log(err);
       const error = new HttpError("Signing up failed, please try again later", 500);
       return next(error);
     }
@@ -54,10 +56,12 @@ const createUser = async (req, res, next) => {
 
 const login = async (req, res, next) => {
     const { email, password } = req.body;
+    console.log("&&&&&&&&&&&&&&&&&&&&"+ req)
   
     let existingUser;
     try {
       existingUser = await User.findOne({ email: email });
+      console.log("!!!!!!!!!!!!!!!!!!!!!!! LOGIN HERE"+ existingUser);
       
       if (!existingUser) {
         const error = new HttpError("Invalid credentials, could not log you in", 401);
@@ -77,6 +81,8 @@ const login = async (req, res, next) => {
   
       existingUser.last_login = new Date();
       await existingUser.save();
+      console.log("!!!!!!!!!!!!!!!!!!!!!!! LOGIN HERE USER"+ existingUser +" TOKEN"+ token);
+
   
       res.json({
         message: 'Logged in',

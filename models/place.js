@@ -3,7 +3,7 @@
 
  // Place Schema
 const placeSchema = new schema({
-    name: {
+    title: {
       type: String,
       required: true
     },
@@ -18,7 +18,7 @@ const placeSchema = new schema({
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
-        required: true
+        required: false
       }
     },
     address: {

@@ -7,16 +7,21 @@ const Place = require('../models/place');
 const User = require('../models/user');
 const { default: mongoose } = require('mongoose');
 const place = require('../models/place');
+const fs = require('fs');
 
 
 
 const createPlace = async (req, res, next) => {
 
-    const { title, description, coordinates, address, creator } = req.body;
+    const { title, description, coordinates, address, creator} = req.body;
+    console.log("PLACE JSON HERE :::::::::: "+JSON.stringify(req.body));
+    console.log("IMAGE HERE "+ req.file.path); 
+
 
     let user ;
+    user = await User.findById(creator);
     try{
-      user = await User.findById(creator);
+    
      
     }catch(err){
       const error = new HttpError("Creating Place failed !", 500);
@@ -29,10 +34,15 @@ const createPlace = async (req, res, next) => {
     const createdPlace = new Place( {
       title,
       description,
-      location: coordinates,
+      location: {
+        type: 'Point',
+        coordinates: coordinates || [0, 0] // Default if not provided
+      },
       address,
-      creator
+      creator,
+      image: req.file.path
     });
+
     try{
       const sess = await mongoose.startSession();
        sess.startTransaction();
@@ -46,7 +56,7 @@ const createPlace = async (req, res, next) => {
       return next(new HttpError(error));
 
 
-    }
+    } 
   
 };
 
@@ -107,6 +117,10 @@ const patchPlace = async (req, res, next) => {
       return next(new HttpError('Could not find place by id', 404));
     }
 
+    if(place.creator.toString() !== req.userData.userId){
+      return next(new HttpError('You are not authorised to edit this place', 401))
+    }
+
     place.title = title;
     place.description = description;
 
@@ -127,6 +141,11 @@ const deletePlace = async (req, res, next) => {
     if (!place) {
       return next(new HttpError("Could not find place", 404));
     }
+
+    if(place.creator.toString() !== req.userData.userId){
+      return next(new HttpError('You are not authorised to delete this place', 401))
+    }
+
     
     const sess = await mongoose.startSession();
      sess.startTransaction
@@ -139,6 +158,10 @@ const deletePlace = async (req, res, next) => {
   } catch (err) {
     return next(new HttpError("Caught error while deleting", 500));
   }
+  fs.unlink(place.image, (err) => {
+    console.log(err);
+  });
+  res.status(200).json({ message: "Place deleted successfully" });
 };
 
 module.exports = { 

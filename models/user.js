@@ -7,8 +7,13 @@ const userSchema = new Schema({
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true
+    },
+    userName:{
+      type: String,
+      required: true,
+      trim: true,
+      unique: true
     },
     email: {
       type: String,
@@ -31,7 +36,11 @@ const userSchema = new Schema({
     },
     places:[ {
       type: mongoose.Types.ObjectId, required: true, ref:'Place'
-    }]
+    }],
+    image: {
+      type: String,
+      required: false
+    },
   });
   
   userSchema.plugin(unique);
