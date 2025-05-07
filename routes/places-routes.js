@@ -1,7 +1,7 @@
 const express = require('express');
 const { check } = require('express-validator');
 const HttpError = require('../models/http-error');
-const { getPlaceById, getPlaceByUserId, createPlace, patchPlace, deletePlace, getPlaces } = require('../controllers/places-controller');
+const { getPlaceById, getPlaceByUserId, createPlace, patchPlace, deletePlace, getPlaces, getPlaceListByUserId } = require('../controllers/places-controller');
 const checkAuth = require('./check_auth_routes');
 const fileUpload = require('../middleware/file-upload');
 const router = express.Router();
@@ -11,7 +11,7 @@ router.get('/', getPlaces)
 
 router.get('/:pid', getPlaceById);
 
-router.get('/user/:uid', getPlaceByUserId)
+router.get('/user/:uid', getPlaceListByUserId);
 
 router.use(checkAuth);
 

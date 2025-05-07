@@ -40,6 +40,10 @@ const placeSchema = new schema({
     updated_at: {
       type: Date,
       default: Date.now
+    },
+    image:{
+      type: String,
+      required: true
     }
   });
   

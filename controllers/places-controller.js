@@ -14,8 +14,7 @@ const fs = require('fs');
 const createPlace = async (req, res, next) => {
 
     const { title, description, coordinates, address, creator} = req.body;
-    console.log("PLACE JSON HERE :::::::::: "+JSON.stringify(req.body));
-    console.log("IMAGE HERE "+ req.file.path); 
+   
 
 
     let user ;
@@ -105,6 +104,26 @@ const getPlaceByUserId = async (req, res, next) => {
   }
 };
 
+const getPlaceListByUserId = async (req, res, next) => {
+  console.log("Fetching places for user id:", req.params.uid);
+  const userId = req.params.uid;
+  let places;
+  try{
+    places = await Place.find({ creator: userId }).exec();
+
+    if (places.length === 0) {
+      return next(new HttpError('Could not find places for the provided user id', 404));
+    }
+    console.log("Fetched places:", places);
+
+    res.status(200).json({ places: places.map(place => place.toObject({ getters: true })) });
+
+  }catch(err){
+    const error = new HttpError("Could not find any places");
+    return next(error);
+  }
+}
+
 const patchPlace = async (req, res, next) => {
   const errors = validationResult(req);
   const placeId = req.params.pid;
@@ -134,34 +153,39 @@ const patchPlace = async (req, res, next) => {
 
 const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid;
+  let place;
 
   try {
-    const place = await Place.findById(placeId).populate('creator');
+    place = await Place.findById(placeId).populate('creator');
 
     if (!place) {
       return next(new HttpError("Could not find place", 404));
     }
 
-    if(place.creator.toString() !== req.userData.userId){
-      return next(new HttpError('You are not authorised to delete this place', 401))
+    if(place.creator._id.toString() !== req.userData.userId){
+      return next(new HttpError('You are not authorised to delete this place', 401));
     }
 
+    const imagePath = place.image; 
     
     const sess = await mongoose.startSession();
-     sess.startTransaction
-    await place.remove({ session: sess });
+    sess.startTransaction(); 
+    
+    await Place.deleteOne({ _id: placeId }).session(sess);
     place.creator.places.pull(place);
-    await place.creator.save({session: sess});
-    sess.commitTransaction();
+    await place.creator.save({ session: sess });
+    await sess.commitTransaction();
+
+    fs.unlink(imagePath, (err) => {
+      if (err) console.log(err);
+    });
 
     res.status(200).json({ message: "Place deleted successfully" });
   } catch (err) {
+    console.log(err);
     return next(new HttpError("Caught error while deleting", 500));
   }
-  fs.unlink(place.image, (err) => {
-    console.log(err);
-  });
-  res.status(200).json({ message: "Place deleted successfully" });
+ 
 };
 
 module.exports = { 
@@ -170,5 +194,6 @@ module.exports = {
   createPlace, 
   patchPlace, 
   deletePlace, 
-  getPlaces 
+  getPlaces,
+  getPlaceListByUserId
 };
